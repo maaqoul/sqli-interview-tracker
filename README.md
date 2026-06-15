@@ -3,7 +3,8 @@
 > **"We Elevate. Digitally."** — Internal interview & candidate tracking platform for SQLI recruiters and hiring managers, with AI-assisted interview workflows.
 
 **GitHub:** https://github.com/maaqoul/sqli-interview-tracker  
-**2-week plan:** [`2-WEEK-PLAN.md`](./2-WEEK-PLAN.md) ← **start here**
+**Intern guide (start here):** [`INTERN-GUIDE.md`](./INTERN-GUIDE.md) — setup, UI specs, API, everything  
+**2-week plan:** [`2-WEEK-PLAN.md`](./2-WEEK-PLAN.md)
 
 ---
 
@@ -47,6 +48,7 @@ The app lets SQLI HR teams:
 
 | File | Purpose |
 |------|---------|
+| [`INTERN-GUIDE.md`](./INTERN-GUIDE.md) | **Complete intern guide** — local setup, UI specs, API, AI, troubleshooting |
 | [`SPEC.md`](./SPEC.md) | Full product & technical specification |
 | [`BRAND.md`](./BRAND.md) | SQLI brand guide — colors, typography, logo URLs |
 | [`TICKETS.md`](./TICKETS.md) | **Human-readable ticket board** — start here |

@@ -55,7 +55,8 @@ Hi,
 Your project is ready. Here's everything you need:
 
 **Repo:** https://github.com/maaqoul/sqli-interview-tracker  
-**Start here:** Read `2-WEEK-PLAN.md` in the repo  
+**Start here:** Read [`INTERN-GUIDE.md`](https://github.com/maaqoul/sqli-interview-tracker/blob/main/INTERN-GUIDE.md) (setup, UI specs, API — everything)  
+**Sprint plan:** [`2-WEEK-PLAN.md`](https://github.com/maaqoul/sqli-interview-tracker/blob/main/2-WEEK-PLAN.md)  
 **First ticket:** [INT-009 — User model with roles](https://github.com/maaqoul/sqli-interview-tracker/issues/9)
 
 **Setup:**
