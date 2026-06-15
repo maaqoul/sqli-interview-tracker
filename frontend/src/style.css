@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sqli-sky: #6ec4e8;
+  --color-sqli-cobalt: #0047bb;
+  --color-sqli-midnight: #1a1f4e;
+  --color-sqli-cream: #faf7f2;
+  --color-sqli-gray-100: #f0ede8;
+  --font-sans: Inter, system-ui, sans-serif;
+}
+
+:root {
+  --sqli-sky-blue: #6ec4e8;
+  --sqli-cobalt-blue: #0047bb;
+  --sqli-midnight-blue: #1a1f4e;
+  --sqli-cream: #faf7f2;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--sqli-cream);
+  color: #111827;
+}
