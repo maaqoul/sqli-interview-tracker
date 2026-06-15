@@ -10,6 +10,7 @@
 | First ticket | [INT-009 — User model](https://github.com/maaqoul/sqli-interview-tracker/issues/9) |
 | Full product spec | [`SPEC.md`](./SPEC.md) |
 | Brand colors/fonts | [`BRAND.md`](./BRAND.md) |
+| **Commits, PRs & DoD** | [`WORKFLOW.md`](./WORKFLOW.md) |
 
 ---
 
@@ -284,6 +285,8 @@ sqli-interview-tracker/
 
 ## 6. How to work day-to-day
 
+> **Full guide:** [`WORKFLOW.md`](./WORKFLOW.md) — definition of done, commit format, PR step-by-step, review process.
+
 ### Morning routine
 
 ```
@@ -300,37 +303,9 @@ sqli-interview-tracker/
 ```
 INT-009-user-model
 INT-020-candidate-crud
-INT-035-ai-question-generator
 ```
 
-### PR template (copy into every PR)
-
-```markdown
-## Ticket
-Closes INT-XXX
-
-## What I did
-- ...
-
-## How to test
-1. ...
-2. ...
-
-## Acceptance criteria
-- [ ] criterion 1
-- [ ] criterion 2
-```
-
-### Git commands cheat sheet
-
-```bash
-git pull                          # get latest
-git checkout -b INT-009-name      # new branch
-git add .                         # stage changes
-git commit -m "INT-009: add user model with roles"
-git push -u origin INT-009-name   # push branch
-gh pr create --title "INT-009: User model" --body "..."
-```
+See [`WORKFLOW.md`](./WORKFLOW.md) for commit format, PR template, and full git commands.
 
 ### When you're stuck
 
@@ -1167,6 +1142,8 @@ cd frontend && npm run lint
 ---
 
 ## 13. Definition of done
+
+> **Full guide:** [`WORKFLOW.md`](./WORKFLOW.md) — 4 levels of done (ticket, PR, week, project).
 
 The project is **complete** when you can demo this flow live:
 

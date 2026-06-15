@@ -4,6 +4,7 @@
 
 **GitHub:** https://github.com/maaqoul/sqli-interview-tracker  
 **Intern guide (start here):** [`INTERN-GUIDE.md`](./INTERN-GUIDE.md) — setup, UI specs, API, everything  
+**Commits & PRs:** [`WORKFLOW.md`](./WORKFLOW.md) — definition of done, how to commit, open PRs  
 **2-week plan:** [`2-WEEK-PLAN.md`](./2-WEEK-PLAN.md)
 
 ---
@@ -48,7 +49,8 @@ The app lets SQLI HR teams:
 
 | File | Purpose |
 |------|---------|
-| [`INTERN-GUIDE.md`](./INTERN-GUIDE.md) | **Complete intern guide** — local setup, UI specs, API, AI, troubleshooting |
+| [`WORKFLOW.md`](./WORKFLOW.md) | **Definition of done, commits, PRs** — how to ship work |
+| [`INTERN-GUIDE.md`](./INTERN-GUIDE.md) | Complete intern guide — local setup, UI specs, API, troubleshooting |
 | [`SPEC.md`](./SPEC.md) | Full product & technical specification |
 | [`BRAND.md`](./BRAND.md) | SQLI brand guide — colors, typography, logo URLs |
 | [`TICKETS.md`](./TICKETS.md) | **Human-readable ticket board** — start here |
