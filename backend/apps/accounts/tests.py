@@ -1,5 +1,7 @@
 from django.db import IntegrityError
 from django.test import TestCase
+from rest_framework import status
+from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
 
@@ -57,3 +59,65 @@ class UserModelTests(TestCase):
             last_name="User",
         )
         self.assertEqual(str(user), "test@sqli.com")
+
+
+class JWTAuthAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        User.objects.create_user(
+            email="recruiter@sqli.com",
+            password="testpass123",
+            first_name="Jean",
+            last_name="Dupont",
+            role=Role.RECRUITER,
+        )
+
+    def test_login_returns_tokens(self):
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": "recruiter@sqli.com", "password": "testpass123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.json())
+        self.assertIn("refresh", response.json())
+
+    def test_login_invalid_password_returns_401(self):
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": "recruiter@sqli.com", "password": "wrongpassword"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_unknown_email_returns_401(self):
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": "nobody@sqli.com", "password": "testpass123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_refresh_returns_new_access_token(self):
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"email": "recruiter@sqli.com", "password": "testpass123"},
+            format="json",
+        )
+        refresh_token = login_response.json()["refresh"]
+
+        response = self.client.post(
+            "/api/auth/refresh/",
+            {"refresh": refresh_token},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.json())
+
+    def test_refresh_invalid_token_returns_401(self):
+        response = self.client.post(
+            "/api/auth/refresh/",
+            {"refresh": "invalid-token"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
