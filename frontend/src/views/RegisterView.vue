@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import axios from 'axios'
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 import AuthBrandHeader from '@/components/AuthBrandHeader.vue'
 import { useAuthStore, type UserRole } from '@/stores/auth'
 
-const router = useRouter()
 const auth = useAuthStore()
 
 const firstName = ref('')
@@ -21,7 +19,6 @@ const passwordError = ref('')
 const error = ref('')
 const success = ref('')
 const loading = ref(false)
-const ready = ref(false)
 
 const roles: { value: UserRole; label: string }[] = [
   { value: 'admin', label: 'Admin' },
@@ -34,29 +31,6 @@ const inputClass =
   'mt-1 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sqli-sky'
 const inputErrorClass = `${inputClass} border-red-400`
 const inputNormalClass = `${inputClass} border-gray-200`
-
-onMounted(async () => {
-  if (!auth.user && auth.isAuthenticated) {
-    try {
-      await auth.fetchUser()
-    } catch {
-      await router.replace('/login')
-      return
-    }
-  }
-
-  if (!auth.isAuthenticated) {
-    await router.replace('/login')
-    return
-  }
-
-  if (auth.user?.role !== 'admin') {
-    await router.replace('/dashboard')
-    return
-  }
-
-  ready.value = true
-})
 
 function validate(): boolean {
   firstNameError.value = ''
@@ -147,7 +121,7 @@ async function handleRegister() {
 
 <template>
   <div class="min-h-screen flex items-center justify-center bg-sqli-cream px-4 py-8">
-    <div v-if="ready" class="w-full max-w-md">
+    <div class="w-full max-w-md">
       <AuthBrandHeader />
 
       <form
@@ -238,7 +212,5 @@ async function handleRegister() {
         </router-link>
       </form>
     </div>
-
-    <p v-else class="text-gray-500 text-sm">Loading…</p>
   </div>
 </template>
