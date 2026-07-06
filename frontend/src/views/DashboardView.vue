@@ -29,6 +29,13 @@ function handleLogout() {
       <p class="text-sqli-sky text-xs mb-8">Interview Tracker</p>
       <nav class="space-y-2 text-sm flex-1">
         <a class="block px-3 py-2 rounded-lg bg-white/10" href="#">Dashboard</a>
+        <router-link
+          v-if="auth.user?.role === 'admin'"
+          to="/register"
+          class="block px-3 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5"
+        >
+          Create user
+        </router-link>
         <a class="block px-3 py-2 rounded-lg text-white/60" href="#">Candidates</a>
         <a class="block px-3 py-2 rounded-lg text-white/60" href="#">Jobs</a>
         <a class="block px-3 py-2 rounded-lg text-white/60" href="#">Interviews</a>
