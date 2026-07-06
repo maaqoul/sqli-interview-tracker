@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import axios from 'axios'
 import { ref } from 'vue'
 import AuthBrandHeader from '@/components/AuthBrandHeader.vue'
@@ -129,7 +129,7 @@ async function handleRegister() {
         @submit.prevent="handleRegister"
       >
         <h1 class="text-xl font-semibold text-sqli-midnight mb-1">Create user</h1>
-        <p class="text-sm text-gray-500 mb-6">Admin only — add a new team member.</p>
+        <p class="text-sm text-gray-500 mb-6">Admin only ÔÇö add a new team member.</p>
 
         <div class="grid grid-cols-2 gap-4 mb-4">
           <label class="block">
@@ -201,7 +201,7 @@ async function handleRegister() {
           :disabled="loading"
           class="w-full bg-sqli-cobalt hover:bg-[#003399] text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
         >
-          {{ loading ? 'Creating…' : 'Create user' }}
+          {{ loading ? 'CreatingÔÇª' : 'Create user' }}
         </button>
 
         <router-link
