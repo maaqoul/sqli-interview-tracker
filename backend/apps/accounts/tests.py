@@ -1,4 +1,4 @@
-from django.db import IntegrityError
+﻿from django.db import IntegrityError
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.request import Request
