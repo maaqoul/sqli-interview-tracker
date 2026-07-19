@@ -1,4 +1,3 @@
-import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -34,6 +33,7 @@ INSTALLED_APPS = [
     "apps.jobs",
     "apps.candidates",
     "apps.interviews",
+    "apps.scorecards",
     "apps.notifications",
 ]
 

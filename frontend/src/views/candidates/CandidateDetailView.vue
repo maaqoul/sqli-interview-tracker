@@ -400,13 +400,15 @@ onMounted(loadAll)
         </button>
       </div>
 
-      <!-- Scorecards (placeholder until INT-031+) -->
+      <!-- Scorecards (aggregate in INT-033) -->
       <div
         v-else-if="activeTab === 'scorecards'"
         class="bg-white rounded-xl border border-sqli-gray-100 p-8 text-center"
       >
-        <p class="text-sqli-midnight font-medium">No scorecards yet</p>
-        <p class="text-sm text-gray-500 mt-1">Scorecards come in INT-031–033.</p>
+        <p class="text-sqli-midnight font-medium">Scorecards</p>
+        <p class="text-sm text-gray-500 mt-1">
+          Aggregated scorecard view comes in INT-033. Interviewers submit via My Interviews.
+        </p>
       </div>
 
       <!-- AI Brief (placeholder until INT-036) -->
