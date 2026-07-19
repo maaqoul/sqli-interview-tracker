@@ -43,7 +43,13 @@ function handleLogout() {
         >
           Create user
         </router-link>
-        <span class="block px-3 py-2 rounded-lg text-white/40 cursor-not-allowed">Candidates</span>
+        <router-link
+          to="/candidates"
+          class="block px-3 py-2 rounded-lg transition-colors"
+          :class="isActive('/candidates') ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'"
+        >
+          Candidates
+        </router-link>
         <span class="block px-3 py-2 rounded-lg text-white/40 cursor-not-allowed">Interviews</span>
         <span class="block px-3 py-2 rounded-lg text-white/40 cursor-not-allowed">AI Tools</span>
       </nav>
