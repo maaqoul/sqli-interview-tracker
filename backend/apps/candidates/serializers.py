@@ -1,7 +1,33 @@
 from rest_framework import serializers
 
-from apps.candidates.models import Candidate
+from apps.candidates.models import Candidate, CandidateActivity
 from apps.jobs.models import PipelineStage
+
+
+class MoveStageSerializer(serializers.Serializer):
+    stage_id = serializers.PrimaryKeyRelatedField(
+        queryset=PipelineStage.objects.all(),
+        source="stage",
+    )
+    reason = serializers.CharField(max_length=500)
+
+
+class CandidateActivitySerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CandidateActivity
+        fields = ("id", "action_type", "description", "metadata", "user", "created_at")
+
+    def get_user(self, obj):
+        if not obj.user:
+            return None
+        return {
+            "id": obj.user.id,
+            "email": obj.user.email,
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+        }
 
 
 class CandidateSerializer(serializers.ModelSerializer):
