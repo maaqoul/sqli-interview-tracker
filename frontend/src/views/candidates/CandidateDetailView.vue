@@ -7,12 +7,15 @@ import {
   moveCandidateStage,
   uploadCandidateResume,
 } from '@/api/candidates'
+import { fetchInterviews } from '@/api/interviews'
 import { fetchJobStages } from '@/api/jobs'
 import AppLayout from '@/components/AppLayout.vue'
 import AppToast from '@/components/AppToast.vue'
 import CandidateStageBadge from '@/components/CandidateStageBadge.vue'
+import ScheduleInterviewModal from '@/components/ScheduleInterviewModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { Candidate, CandidateActivity } from '@/types/candidates'
+import type { Interview } from '@/types/interviews'
 import type { PipelineStage } from '@/types/jobs'
 
 type TabId = 'overview' | 'timeline' | 'interviews' | 'scorecards' | 'ai'
@@ -36,6 +39,8 @@ const moveError = ref('')
 
 const resumeInput = ref<HTMLInputElement | null>(null)
 const resumeUploading = ref(false)
+const showScheduleModal = ref(false)
+const candidateInterviews = ref<Interview[]>([])
 
 const canManage = computed(
   () => auth.user?.role === 'recruiter' || auth.user?.role === 'admin',
@@ -69,12 +74,14 @@ async function loadAll() {
   const id = Number(route.params.id)
   try {
     candidate.value = await fetchCandidate(id)
-    const [timeline, jobStages] = await Promise.all([
+    const [timeline, jobStages, interviews] = await Promise.all([
       fetchCandidateTimeline(id),
       fetchJobStages(candidate.value.job),
+      fetchInterviews({ candidate_id: id }),
     ])
     activities.value = timeline
     stages.value = jobStages
+    candidateInterviews.value = interviews.results
   } catch {
     error.value = 'Candidate not found.'
     candidate.value = null
@@ -138,7 +145,12 @@ async function submitMove() {
 }
 
 function onScheduleClick() {
-  showToast('Schedule Interview comes in INT-030.')
+  showScheduleModal.value = true
+}
+
+async function onInterviewScheduled() {
+  showToast('Interview scheduled.')
+  await loadAll()
 }
 
 function onAddNoteClick() {
@@ -354,13 +366,30 @@ onMounted(loadAll)
         <p v-else class="text-sm text-gray-500">No activity yet.</p>
       </div>
 
-      <!-- Interviews (placeholder until INT-027+) -->
+      <!-- Interviews -->
       <div
         v-else-if="activeTab === 'interviews'"
-        class="bg-white rounded-xl border border-sqli-gray-100 p-8 text-center"
+        class="bg-white rounded-xl border border-sqli-gray-100 p-6"
       >
-        <p class="text-sqli-midnight font-medium">No interviews yet</p>
-        <p class="text-sm text-gray-500 mt-1">Scheduling lands in INT-027 / INT-030.</p>
+        <div v-if="candidateInterviews.length" class="space-y-3">
+          <div
+            v-for="iv in candidateInterviews"
+            :key="iv.id"
+            class="border border-sqli-gray-100 rounded-lg p-3 text-sm"
+          >
+            <p class="font-medium text-sqli-midnight capitalize">
+              {{ iv.type }} · {{ new Date(iv.scheduled_at).toLocaleString('en-GB') }}
+            </p>
+            <p class="text-gray-500 text-xs mt-0.5">
+              {{ iv.duration_min }} min · {{ iv.status }} ·
+              {{ iv.interviewer_names.join(', ') || 'No interviewers' }}
+            </p>
+          </div>
+        </div>
+        <div v-else class="text-center py-4">
+          <p class="text-sqli-midnight font-medium">No interviews yet</p>
+          <p class="text-sm text-gray-500 mt-1">Schedule one from the button above.</p>
+        </div>
         <button
           v-if="canManage"
           type="button"
@@ -451,6 +480,13 @@ onMounted(loadAll)
         </div>
       </div>
     </div>
+
+    <ScheduleInterviewModal
+      :open="showScheduleModal"
+      :prefill-candidate-id="candidate?.id"
+      @close="showScheduleModal = false"
+      @saved="onInterviewScheduled"
+    />
 
     <AppToast :message="toast" />
   </AppLayout>
