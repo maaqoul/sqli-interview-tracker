@@ -33,6 +33,8 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.jobs",
     "apps.candidates",
+    "apps.interviews",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
