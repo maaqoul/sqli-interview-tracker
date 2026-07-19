@@ -1,6 +1,13 @@
 export type CandidateSource = 'linkedin' | 'referral' | 'job_board' | 'other' | ''
 export type CandidateStatus = 'active' | 'rejected' | 'hired'
 
+export type ActivityActionType =
+  | 'created'
+  | 'stage_change'
+  | 'note_added'
+  | 'interview_scheduled'
+  | 'scorecard_submitted'
+
 export interface Candidate {
   id: number
   first_name: string
@@ -18,6 +25,22 @@ export interface Candidate {
   status: CandidateStatus
   created_at: string
   updated_at: string
+}
+
+export interface CandidateActivityUser {
+  id: number
+  email: string
+  first_name: string
+  last_name: string
+}
+
+export interface CandidateActivity {
+  id: number
+  action_type: ActivityActionType
+  description: string
+  metadata: Record<string, unknown>
+  user: CandidateActivityUser | null
+  created_at: string
 }
 
 export interface CandidatePayload {
