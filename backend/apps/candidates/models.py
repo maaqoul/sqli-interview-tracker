@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 from apps.jobs.models import JobOpening, PipelineStage
@@ -14,6 +15,14 @@ class CandidateStatus(models.TextChoices):
     ACTIVE = "active", "Active"
     REJECTED = "rejected", "Rejected"
     HIRED = "hired", "Hired"
+
+
+class ActivityActionType(models.TextChoices):
+    CREATED = "created", "Created"
+    STAGE_CHANGE = "stage_change", "Stage change"
+    NOTE_ADDED = "note_added", "Note added"
+    INTERVIEW_SCHEDULED = "interview_scheduled", "Interview scheduled"
+    SCORECARD_SUBMITTED = "scorecard_submitted", "Scorecard submitted"
 
 
 class Candidate(models.Model):
@@ -51,3 +60,28 @@ class Candidate(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class CandidateActivity(models.Model):
+    candidate = models.ForeignKey(
+        Candidate,
+        on_delete=models.CASCADE,
+        related_name="activities",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="candidate_activities",
+    )
+    action_type = models.CharField(max_length=40, choices=ActivityActionType.choices)
+    description = models.TextField()
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name_plural = "candidate activities"
+
+    def __str__(self):
+        return f"{self.candidate} — {self.action_type}"

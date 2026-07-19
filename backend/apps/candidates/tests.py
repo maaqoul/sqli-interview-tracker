@@ -365,3 +365,195 @@ class CandidateResumeUploadTests(TestCase):
             format="multipart",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class CandidateMoveStageAndTimelineTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.recruiter = User.objects.create_user(
+            email="recruiter@sqli.com",
+            password="testpass123",
+            first_name="Jean",
+            last_name="Dupont",
+            role=Role.RECRUITER,
+        )
+        self.interviewer = User.objects.create_user(
+            email="interviewer@sqli.com",
+            password="testpass123",
+            first_name="Sara",
+            last_name="Lee",
+            role=Role.INTERVIEWER,
+        )
+        self.job = JobOpening.objects.create(
+            title="Senior Python Developer",
+            department="Engineering",
+            location="Paris",
+            level="senior",
+            description="Build interview tracker APIs.",
+            status=JobStatus.OPEN,
+            created_by=self.recruiter,
+        )
+        self.applied = self.job.pipeline_stages.get(order=1)
+        self.screening = self.job.pipeline_stages.get(order=2)
+        self.hired = self.job.pipeline_stages.get(name="Hired")
+        self.rejected = self.job.pipeline_stages.get(name="Rejected")
+        self.other_job = JobOpening.objects.create(
+            title="UX Designer",
+            department="Design",
+            location="Lyon",
+            level="mid",
+            description="Design systems.",
+            status=JobStatus.OPEN,
+            created_by=self.recruiter,
+        )
+        self.other_job_stage = self.other_job.pipeline_stages.get(order=1)
+        self.candidate = Candidate.objects.create(
+            first_name="Marie",
+            last_name="Martin",
+            email="marie.martin@example.com",
+            job=self.job,
+            current_stage=self.applied,
+            status=CandidateStatus.ACTIVE,
+        )
+
+    def _login(self, user):
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": user.email, "password": "testpass123"},
+            format="json",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.json()['access']}")
+
+    def test_create_candidate_logs_created_activity(self):
+        self._login(self.recruiter)
+        response = self.client.post(
+            "/api/candidates/",
+            {
+                "first_name": "Paul",
+                "last_name": "Durand",
+                "email": "paul@example.com",
+                "job": self.job.id,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        candidate_id = response.json()["id"]
+
+        timeline = self.client.get(f"/api/candidates/{candidate_id}/timeline/")
+        self.assertEqual(timeline.status_code, status.HTTP_200_OK)
+        events = timeline.json()
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["action_type"], "created")
+        self.assertEqual(events[0]["user"]["email"], "recruiter@sqli.com")
+        self.assertIn("Senior Python Developer", events[0]["description"])
+
+    def test_recruiter_can_move_candidate_stage(self):
+        self._login(self.recruiter)
+        response = self.client.post(
+            f"/api/candidates/{self.candidate.id}/move-stage/",
+            {"stage_id": self.screening.id, "reason": "Passed phone screen"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["current_stage"], self.screening.id)
+        self.assertEqual(response.json()["current_stage_name"], "Screening")
+        self.assertEqual(response.json()["status"], "active")
+
+        self.candidate.refresh_from_db()
+        self.assertEqual(self.candidate.current_stage_id, self.screening.id)
+
+    def test_move_stage_creates_activity_log(self):
+        self._login(self.recruiter)
+        self.client.post(
+            f"/api/candidates/{self.candidate.id}/move-stage/",
+            {"stage_id": self.screening.id, "reason": "Passed phone screen"},
+            format="json",
+        )
+
+        timeline = self.client.get(f"/api/candidates/{self.candidate.id}/timeline/")
+        events = timeline.json()
+        stage_events = [e for e in events if e["action_type"] == "stage_change"]
+        self.assertEqual(len(stage_events), 1)
+        event = stage_events[0]
+        self.assertEqual(event["metadata"]["from_stage_name"], "Applied")
+        self.assertEqual(event["metadata"]["to_stage_name"], "Screening")
+        self.assertEqual(event["metadata"]["reason"], "Passed phone screen")
+        self.assertEqual(event["user"]["first_name"], "Jean")
+
+    def test_reject_from_any_stage(self):
+        self._login(self.recruiter)
+        response = self.client.post(
+            f"/api/candidates/{self.candidate.id}/move-stage/",
+            {"stage_id": self.rejected.id, "reason": "Not a culture fit"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["current_stage_name"], "Rejected")
+        self.assertEqual(response.json()["status"], "rejected")
+
+    def test_move_to_hired_sets_status(self):
+        self._login(self.recruiter)
+        response = self.client.post(
+            f"/api/candidates/{self.candidate.id}/move-stage/",
+            {"stage_id": self.hired.id, "reason": "Offer accepted"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["status"], "hired")
+
+    def test_stage_from_other_job_returns_400(self):
+        self._login(self.recruiter)
+        response = self.client.post(
+            f"/api/candidates/{self.candidate.id}/move-stage/",
+            {"stage_id": self.other_job_stage.id, "reason": "Wrong job"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_missing_reason_returns_400(self):
+        self._login(self.recruiter)
+        response = self.client.post(
+            f"/api/candidates/{self.candidate.id}/move-stage/",
+            {"stage_id": self.screening.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("reason", response.json())
+
+    def test_interviewer_cannot_move_stage(self):
+        self._login(self.interviewer)
+        response = self.client.post(
+            f"/api/candidates/{self.candidate.id}/move-stage/",
+            {"stage_id": self.screening.id, "reason": "Nope"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_timeline_newest_first(self):
+        self._login(self.recruiter)
+        create_response = self.client.post(
+            "/api/candidates/",
+            {
+                "first_name": "Nina",
+                "last_name": "Rossi",
+                "email": "nina@example.com",
+                "job": self.job.id,
+            },
+            format="json",
+        )
+        candidate_id = create_response.json()["id"]
+        self.client.post(
+            f"/api/candidates/{candidate_id}/move-stage/",
+            {"stage_id": self.screening.id, "reason": "Advance"},
+            format="json",
+        )
+
+        timeline = self.client.get(f"/api/candidates/{candidate_id}/timeline/")
+        events = timeline.json()
+        self.assertEqual(len(events), 2)
+        self.assertEqual(events[0]["action_type"], "stage_change")
+        self.assertEqual(events[1]["action_type"], "created")
+
+    def test_unauthenticated_timeline_returns_401(self):
+        response = self.client.get(f"/api/candidates/{self.candidate.id}/timeline/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
