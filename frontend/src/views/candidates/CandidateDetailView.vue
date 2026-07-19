@@ -8,15 +8,18 @@ import {
   uploadCandidateResume,
 } from '@/api/candidates'
 import { fetchInterviews } from '@/api/interviews'
+import { fetchScorecards } from '@/api/scorecards'
 import { fetchJobStages } from '@/api/jobs'
 import AppLayout from '@/components/AppLayout.vue'
 import AppToast from '@/components/AppToast.vue'
+import CandidateScorecardsPanel from '@/components/CandidateScorecardsPanel.vue'
 import CandidateStageBadge from '@/components/CandidateStageBadge.vue'
 import ScheduleInterviewModal from '@/components/ScheduleInterviewModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { Candidate, CandidateActivity } from '@/types/candidates'
 import type { Interview } from '@/types/interviews'
 import type { PipelineStage } from '@/types/jobs'
+import type { Scorecard } from '@/types/scorecards'
 
 type TabId = 'overview' | 'timeline' | 'interviews' | 'scorecards' | 'ai'
 
@@ -41,6 +44,7 @@ const resumeInput = ref<HTMLInputElement | null>(null)
 const resumeUploading = ref(false)
 const showScheduleModal = ref(false)
 const candidateInterviews = ref<Interview[]>([])
+const candidateScorecards = ref<Scorecard[]>([])
 
 const canManage = computed(
   () => auth.user?.role === 'recruiter' || auth.user?.role === 'admin',
@@ -74,14 +78,16 @@ async function loadAll() {
   const id = Number(route.params.id)
   try {
     candidate.value = await fetchCandidate(id)
-    const [timeline, jobStages, interviews] = await Promise.all([
+    const [timeline, jobStages, interviews, scorecards] = await Promise.all([
       fetchCandidateTimeline(id),
       fetchJobStages(candidate.value.job),
       fetchInterviews({ candidate_id: id }),
+      fetchScorecards({ candidate_id: id }),
     ])
     activities.value = timeline
     stages.value = jobStages
     candidateInterviews.value = interviews.results
+    candidateScorecards.value = scorecards.results
   } catch {
     error.value = 'Candidate not found.'
     candidate.value = null
@@ -400,15 +406,12 @@ onMounted(loadAll)
         </button>
       </div>
 
-      <!-- Scorecards (aggregate in INT-033) -->
-      <div
-        v-else-if="activeTab === 'scorecards'"
-        class="bg-white rounded-xl border border-sqli-gray-100 p-8 text-center"
-      >
-        <p class="text-sqli-midnight font-medium">Scorecards</p>
-        <p class="text-sm text-gray-500 mt-1">
-          Aggregated scorecard view comes in INT-033. Interviewers submit via My Interviews.
-        </p>
+      <!-- Scorecards aggregate -->
+      <div v-else-if="activeTab === 'scorecards'">
+        <CandidateScorecardsPanel
+          :scorecards="candidateScorecards"
+          :can-see-private-notes="canManage"
+        />
       </div>
 
       <!-- AI Brief (placeholder until INT-036) -->
