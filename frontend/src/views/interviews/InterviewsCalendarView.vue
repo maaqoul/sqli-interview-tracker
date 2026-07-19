@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { fetchInterviews, updateInterview } from '@/api/interviews'
 import AppLayout from '@/components/AppLayout.vue'
 import AppToast from '@/components/AppToast.vue'
@@ -9,6 +10,7 @@ import type { Interview } from '@/types/interviews'
 import { INTERVIEW_TYPE_COLORS, INTERVIEW_TYPE_LABELS } from '@/types/interviews'
 
 const auth = useAuthStore()
+const router = useRouter()
 
 const weekStart = ref(startOfWeek(new Date()))
 const interviews = ref<Interview[]>([])
@@ -271,6 +273,14 @@ onMounted(loadInterviews)
             @click="selected = null"
           >
             Close
+          </button>
+          <button
+            v-if="selected.status === 'scheduled'"
+            type="button"
+            class="px-3 py-2 rounded-lg bg-sqli-cobalt text-white text-sm"
+            @click="router.push(`/interviews/${selected.id}/scorecard`)"
+          >
+            Submit scorecard
           </button>
           <button
             v-if="canManage"

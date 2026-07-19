@@ -9,6 +9,8 @@ import CandidatesView from '@/views/candidates/CandidatesView.vue'
 import CandidateFormView from '@/views/candidates/CandidateFormView.vue'
 import CandidateDetailView from '@/views/candidates/CandidateDetailView.vue'
 import InterviewsCalendarView from '@/views/interviews/InterviewsCalendarView.vue'
+import MyInterviewsView from '@/views/interviews/MyInterviewsView.vue'
+import ScorecardFormView from '@/views/interviews/ScorecardFormView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -54,6 +56,12 @@ const router = createRouter({
     },
     { path: '/candidates/:id', name: 'candidate-detail', component: CandidateDetailView },
     { path: '/interviews', name: 'interviews', component: InterviewsCalendarView },
+    { path: '/my-interviews', name: 'my-interviews', component: MyInterviewsView },
+    {
+      path: '/interviews/:id/scorecard',
+      name: 'scorecard-form',
+      component: ScorecardFormView,
+    },
   ],
 })
 

@@ -57,6 +57,13 @@ function handleLogout() {
         >
           Interviews
         </router-link>
+        <router-link
+          to="/my-interviews"
+          class="block px-3 py-2 rounded-lg transition-colors"
+          :class="isActive('/my-interviews') ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'"
+        >
+          My Interviews
+        </router-link>
         <span class="block px-3 py-2 rounded-lg text-white/40 cursor-not-allowed">AI Tools</span>
       </nav>
       <div class="text-xs text-white/50 mb-2 truncate">
