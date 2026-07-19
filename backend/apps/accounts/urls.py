@@ -6,12 +6,14 @@ from .views import (
     EmailTokenObtainPairView,
     MeView,
     RegisterView,
+    UserListView,
 )
 
 urlpatterns = [
     path("login/", EmailTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("me/", MeView.as_view(), name="auth_me"),
+    path("users/", UserListView.as_view(), name="auth_users"),
     path("register/", RegisterView.as_view(), name="auth_register"),
     path("change-password/", ChangePasswordView.as_view(), name="auth_change_password"),
 ]

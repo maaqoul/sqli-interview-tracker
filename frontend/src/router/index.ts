@@ -5,6 +5,10 @@ import DashboardView from '@/views/DashboardView.vue'
 import JobsListView from '@/views/jobs/JobsListView.vue'
 import JobDetailView from '@/views/jobs/JobDetailView.vue'
 import JobFormView from '@/views/jobs/JobFormView.vue'
+import CandidatesView from '@/views/candidates/CandidatesView.vue'
+import CandidateFormView from '@/views/candidates/CandidateFormView.vue'
+import CandidateDetailView from '@/views/candidates/CandidateDetailView.vue'
+import InterviewsCalendarView from '@/views/interviews/InterviewsCalendarView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -41,6 +45,15 @@ const router = createRouter({
       meta: { requiresRecruiter: true },
     },
     { path: '/jobs/:id', name: 'job-detail', component: JobDetailView },
+    { path: '/candidates', name: 'candidates', component: CandidatesView },
+    {
+      path: '/candidates/new',
+      name: 'candidate-create',
+      component: CandidateFormView,
+      meta: { requiresRecruiter: true },
+    },
+    { path: '/candidates/:id', name: 'candidate-detail', component: CandidateDetailView },
+    { path: '/interviews', name: 'interviews', component: InterviewsCalendarView },
   ],
 })
 

@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from apps.accounts.permissions import IsAdmin
+from apps.accounts.models import User
+from apps.accounts.permissions import IsAdmin, IsRecruiter
 from apps.accounts.serializers import (
     ChangePasswordSerializer,
     EmailTokenObtainPairSerializer,
@@ -25,6 +26,21 @@ class MeView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserListView(generics.ListAPIView):
+    """GET /api/auth/users/ — list users for interviewer assignment (recruiter+)."""
+
+    permission_classes = [IsAuthenticated, IsRecruiter]
+    serializer_class = UserSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        queryset = User.objects.filter(is_active=True).order_by("first_name", "last_name")
+        role = self.request.query_params.get("role")
+        if role:
+            queryset = queryset.filter(role=role)
+        return queryset
 
 
 class RegisterView(generics.CreateAPIView):
