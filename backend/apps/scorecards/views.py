@@ -1,8 +1,10 @@
 from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.models import Role
+from apps.scorecards.aggregation import aggregate_scorecards
 from apps.scorecards.models import Scorecard
 from apps.scorecards.serializers import ScorecardSerializer
 from apps.scorecards.services import finalize_scorecard_submission
@@ -56,3 +58,16 @@ class ScorecardViewSet(
         finalize_scorecard_submission(scorecard=scorecard, user=request.user)
         output = self.get_serializer(scorecard)
         return Response(output.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=["get"], url_path="summary")
+    def summary(self, request):
+        """Aggregate averages + recommendation consensus for a candidate."""
+        candidate_id = request.query_params.get("candidate_id")
+        if not candidate_id:
+            return Response(
+                {"detail": "candidate_id query parameter is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = self.get_queryset().filter(interview__candidate_id=candidate_id)
+        return Response(aggregate_scorecards(queryset))

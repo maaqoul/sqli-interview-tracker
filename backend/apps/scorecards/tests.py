@@ -167,3 +167,43 @@ class ScorecardAPITests(TestCase):
         if isinstance(results, dict):
             results = results["results"]
         self.assertEqual(len(results), 1)
+
+    def test_summary_aggregate(self):
+        Scorecard.objects.create(
+            interview=self.interview,
+            interviewer=self.interviewer,
+            overall_rating=4,
+            skill_ratings=self.payload["skill_ratings"],
+            recommendation="yes",
+        )
+        Scorecard.objects.create(
+            interview=self.interview,
+            interviewer=self.other_interviewer,
+            overall_rating=2,
+            skill_ratings={
+                "technical": 2,
+                "communication": 2,
+                "problem_solving": 2,
+                "culture_fit": 2,
+                "leadership": 2,
+            },
+            recommendation="no",
+        )
+        self.interview.interviewers.add(self.other_interviewer)
+
+        self._login(self.recruiter)
+        response = self.client.get(
+            f"/api/scorecards/summary/?candidate_id={self.candidate.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(data["count"], 2)
+        self.assertEqual(data["average_overall"], 3.0)
+        self.assertEqual(data["yes_count"], 1)
+        self.assertEqual(data["consensus_label"], "1/2 recommend Yes")
+        self.assertEqual(data["average_skills"]["technical"], 3.0)
+
+    def test_summary_requires_candidate_id(self):
+        self._login(self.recruiter)
+        response = self.client.get("/api/scorecards/summary/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
