@@ -4,7 +4,8 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+# Prefer lockfile; fall back if optional platform deps differ (Windows vs Linux).
+RUN npm ci || npm install
 
 COPY . .
 
