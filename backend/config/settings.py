@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "apps.interviews",
     "apps.scorecards",
     "apps.notifications",
+    "apps.ai_assistant",
 ]
 
 MIDDLEWARE = [
@@ -125,6 +126,7 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
 }
 
-AI_PROVIDER = env("AI_PROVIDER", default="openai")
+AI_PROVIDER = env("AI_PROVIDER", default="mock")
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 OLLAMA_BASE_URL = env("OLLAMA_BASE_URL", default="http://localhost:11434")
+AI_RATE_LIMIT_PER_HOUR = env.int("AI_RATE_LIMIT_PER_HOUR", default=20)
