@@ -1,13 +1,18 @@
-.PHONY: up down build migrate seed test lint setup
+.PHONY: up down build migrate seed test lint setup dev-up
 
+# Production stack (Postgres + gunicorn + nginx). Fresh machine: make setup && make up
 up:
-	docker compose up -d
+	docker compose up -d --build
 
 down:
 	docker compose down
 
 build:
 	docker compose build
+
+# Hot-reload stack (Vite + Django runserver)
+dev-up:
+	docker compose -f docker-compose.dev.yml up --build
 
 migrate:
 	cd backend && python manage.py migrate
