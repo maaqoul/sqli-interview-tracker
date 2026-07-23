@@ -21,7 +21,7 @@ seed:
 	cd backend && python manage.py seed_demo
 
 test:
-	cd backend && pytest -v
+	cd backend && pytest -v --cov=apps --cov-report=term-missing:skip-covered --cov-fail-under=70
 
 lint:
 	cd backend && ruff check .

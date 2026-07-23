@@ -309,3 +309,81 @@ class AuthExtrasAPITests(TestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_patch_me_updates_profile(self):
+        self.client.force_authenticate(user=self.recruiter)
+        response = self.client.patch(
+            "/api/auth/me/",
+            {"first_name": "Marie", "last_name": "Updated"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["first_name"], "Marie")
+        self.recruiter.refresh_from_db()
+        self.assertEqual(self.recruiter.last_name, "Updated")
+
+    def test_list_users_filter_by_role(self):
+        User.objects.create_user(
+            email="interviewer@sqli.com",
+            password="testpass123",
+            first_name="Sara",
+            last_name="Lee",
+            role=Role.INTERVIEWER,
+        )
+        self.client.force_authenticate(user=self.recruiter)
+        response = self.client.get("/api/auth/users/?role=interviewer")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        emails = {row["email"] for row in response.json()}
+        self.assertIn("interviewer@sqli.com", emails)
+        self.assertNotIn("recruiter@sqli.com", emails)
+
+    def test_admin_list_users_include_inactive(self):
+        inactive = User.objects.create_user(
+            email="inactive@sqli.com",
+            password="testpass123",
+            first_name="Gone",
+            last_name="User",
+            role=Role.INTERVIEWER,
+            is_active=False,
+        )
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get("/api/auth/users/?include_inactive=1")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = {row["id"] for row in response.json()}
+        self.assertIn(inactive.id, ids)
+
+    def test_admin_can_patch_user_role(self):
+        target = User.objects.create_user(
+            email="promote@sqli.com",
+            password="testpass123",
+            first_name="Promote",
+            last_name="Me",
+            role=Role.INTERVIEWER,
+        )
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(
+            f"/api/auth/users/{target.id}/",
+            {"role": Role.RECRUITER, "is_active": True},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        target.refresh_from_db()
+        self.assertEqual(target.role, Role.RECRUITER)
+
+    def test_admin_patch_missing_user_returns_404(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(
+            "/api/auth/users/99999/",
+            {"role": Role.RECRUITER},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_recruiter_cannot_patch_user(self):
+        self.client.force_authenticate(user=self.recruiter)
+        response = self.client.patch(
+            f"/api/auth/users/{self.admin.id}/",
+            {"role": Role.INTERVIEWER},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

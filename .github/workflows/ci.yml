@@ -19,7 +19,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: ruff check .
-      - run: pytest -v
+      - run: pytest -v --cov=apps --cov-report=term-missing:skip-covered --cov-fail-under=70
 
   frontend:
     runs-on: ubuntu-latest
