@@ -2,7 +2,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from apps.accounts.models import User
+from apps.accounts.models import Role, User
 
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -14,10 +14,68 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """Public user profile — used by GET /api/auth/me/"""
 
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ("id", "email", "role", "first_name", "last_name")
-        read_only_fields = fields
+        fields = (
+            "id",
+            "email",
+            "role",
+            "first_name",
+            "last_name",
+            "avatar",
+            "avatar_url",
+            "is_active",
+        )
+        read_only_fields = (
+            "id",
+            "email",
+            "role",
+            "avatar",
+            "avatar_url",
+            "is_active",
+        )
+
+    def get_avatar_url(self, obj):
+        if not obj.avatar:
+            return None
+        request = self.context.get("request")
+        url = obj.avatar.url
+        if request:
+            return request.build_absolute_uri(url)
+        return url
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """PATCH /api/auth/me/ — update name and avatar."""
+
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "avatar")
+
+    def validate_first_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("First name is required.")
+        return value.strip()
+
+    def validate_last_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Last name is required.")
+        return value.strip()
+
+
+class AdminUserUpdateSerializer(serializers.ModelSerializer):
+    """PATCH /api/auth/users/<id>/ — admin changes role / active."""
+
+    class Meta:
+        model = User
+        fields = ("role", "is_active", "first_name", "last_name")
+
+    def validate_role(self, value):
+        if value not in Role.values:
+            raise serializers.ValidationError("Invalid role.")
+        return value
 
 
 class RegisterSerializer(serializers.ModelSerializer):

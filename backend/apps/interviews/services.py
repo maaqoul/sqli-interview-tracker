@@ -1,6 +1,7 @@
 from apps.candidates.models import ActivityActionType
 from apps.candidates.services import log_activity
 from apps.notifications.models import Notification
+from apps.notifications.services import notify_scorecard_due
 
 
 def notify_interviewers(*, interview, interviewer_ids):
@@ -11,12 +12,14 @@ def notify_interviewers(*, interview, interviewer_ids):
         f"with {interview.candidate} for {interview.job.title} "
         f"on {interview.scheduled_at.strftime('%Y-%m-%d %H:%M')}."
     )
-    link = f"/interviews/{interview.id}"
+    link = "/my-interviews"
     notifications = [
         Notification(user_id=user_id, title=title, message=message, link=link)
         for user_id in interviewer_ids
     ]
-    return Notification.objects.bulk_create(notifications)
+    created = Notification.objects.bulk_create(notifications)
+    notify_scorecard_due(interview=interview, interviewer_ids=interviewer_ids)
+    return created
 
 
 def log_interview_scheduled(*, interview, user):

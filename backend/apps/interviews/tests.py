@@ -89,8 +89,10 @@ class InterviewAPITests(TestCase):
         response = self.client.post("/api/interviews/", self.payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         notes = Notification.objects.filter(user=self.interviewer)
-        self.assertEqual(notes.count(), 1)
-        self.assertIn("Interview assigned", notes.first().title)
+        self.assertEqual(notes.count(), 2)
+        titles = set(notes.values_list("title", flat=True))
+        self.assertIn("Interview assigned", titles)
+        self.assertIn("Scorecard due", titles)
 
     def test_create_logs_candidate_activity(self):
         self._login(self.recruiter)
@@ -235,7 +237,7 @@ class InterviewAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             Notification.objects.filter(user=self.other_interviewer).count(),
-            1,
+            2,
         )
         self.assertEqual(
             Notification.objects.filter(user=self.interviewer).count(),

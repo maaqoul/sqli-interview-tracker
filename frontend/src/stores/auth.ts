@@ -10,6 +10,9 @@ export interface User {
   role: UserRole
   first_name: string
   last_name: string
+  avatar?: string | null
+  avatar_url?: string | null
+  is_active?: boolean
 }
 
 interface LoginResponse {
@@ -44,6 +47,21 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser() {
     const { data } = await api.get<User>('/api/auth/me/')
     user.value = data
+    return data
+  }
+
+  async function updateProfile(payload: FormData | { first_name: string; last_name: string }) {
+    const { data } = await api.patch<User>('/api/auth/me/', payload)
+    user.value = data
+    return data
+  }
+
+  async function changePassword(payload: {
+    current_password: string
+    new_password: string
+    confirm_password: string
+  }) {
+    const { data } = await api.post<{ detail: string }>('/api/auth/change-password/', payload)
     return data
   }
 
@@ -105,6 +123,8 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     refresh,
     fetchUser,
+    updateProfile,
+    changePassword,
     initialize,
     checkHealth,
   }

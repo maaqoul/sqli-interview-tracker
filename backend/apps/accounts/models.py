@@ -42,6 +42,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         choices=Role.choices,
         default=Role.RECRUITER,
     )
+    avatar = models.FileField(upload_to="avatars/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
