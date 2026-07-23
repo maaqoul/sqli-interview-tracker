@@ -1,6 +1,6 @@
 # SQLI Interview Tracker — Ticket Board
 
-> **42 tickets** to build a fully operational app.  
+> **48 tickets** to build a fully operational app.  
 > Work in order. Respect dependencies. Mark ✅ when done.
 
 **Legend:** 🔴 Critical · 🟡 High · 🟢 Normal · ⚪ Low  
@@ -12,14 +12,14 @@
 
 | ID | Title | Priority | Est. | Deps | Status |
 |----|-------|----------|------|------|--------|
-| INT-001 | Initialize monorepo structure | 🔴 | S | — | ⬜ |
-| INT-002 | Setup Django backend with DRF | 🔴 | M | INT-001 | ⬜ |
-| INT-003 | Setup Vue 3 + Vite frontend | 🔴 | M | INT-001 | ⬜ |
-| INT-004 | Configure PostgreSQL + Docker Compose | 🔴 | M | INT-002 | ⬜ |
-| INT-005 | Configure Tailwind with SQLI brand tokens | 🟡 | S | INT-003 | ⬜ |
-| INT-006 | Setup linting & formatting (Ruff, ESLint, Prettier) | 🟢 | S | INT-002, INT-003 | ⬜ |
-| INT-007 | Create Makefile & .env.example | 🟡 | S | INT-004 | ⬜ |
-| INT-008 | Setup GitHub Actions CI pipeline | 🟢 | M | INT-006 | ⬜ |
+| INT-001 | Initialize monorepo structure | 🔴 | S | — | ✅ |
+| INT-002 | Setup Django backend with DRF | 🔴 | M | INT-001 | ✅ |
+| INT-003 | Setup Vue 3 + Vite frontend | 🔴 | M | INT-001 | ✅ |
+| INT-004 | Configure PostgreSQL + Docker Compose | 🔴 | M | INT-002 | ✅ |
+| INT-005 | Configure Tailwind with SQLI brand tokens | 🟡 | S | INT-003 | ✅ |
+| INT-006 | Setup linting & formatting (Ruff, ESLint, Prettier) | 🟢 | S | INT-002, INT-003 | ✅ |
+| INT-007 | Create Makefile & .env.example | 🟡 | S | INT-004 | ✅ |
+| INT-008 | Setup GitHub Actions CI pipeline | 🟢 | M | INT-006 | ✅ |
 
 ### INT-001 — Initialize monorepo structure
 **Description:** Create `backend/`, `frontend/`, `docker-compose.yml`, root `README.md`. Add `.gitignore` for Python + Node.
@@ -105,13 +105,13 @@
 
 | ID | Title | Priority | Est. | Deps | Status |
 |----|-------|----------|------|------|--------|
-| INT-009 | User model with roles (Admin/Recruiter/Interviewer/Manager) | 🔴 | M | INT-004 | ⬜ |
-| INT-010 | JWT authentication (login, refresh, logout) | 🔴 | M | INT-009 | ⬜ |
-| INT-011 | RBAC permission classes for DRF | 🔴 | M | INT-010 | ⬜ |
-| INT-012 | Auth API: register, profile, change password | 🟡 | M | INT-010 | ⬜ |
-| INT-013 | Vue auth store + Axios JWT interceptor | 🔴 | M | INT-010, INT-003 | ⬜ |
-| INT-014 | Login & Register pages (SQLI branded) | 🔴 | M | INT-005, INT-013 | ⬜ |
-| INT-015 | Vue Router auth guards | 🔴 | S | INT-013 | ⬜ |
+| INT-009 | User model with roles (Admin/Recruiter/Interviewer/Manager) | 🔴 | M | INT-004 | ✅ |
+| INT-010 | JWT authentication (login, refresh, logout) | 🔴 | M | INT-009 | ✅ |
+| INT-011 | RBAC permission classes for DRF | 🔴 | M | INT-010 | ✅ |
+| INT-012 | Auth API: register, profile, change password | 🟡 | M | INT-010 | ✅ |
+| INT-013 | Vue auth store + Axios JWT interceptor | 🔴 | M | INT-010, INT-003 | ✅ |
+| INT-014 | Login & Register pages (SQLI branded) | 🔴 | M | INT-005, INT-013 | ✅ |
+| INT-015 | Vue Router auth guards | 🔴 | S | INT-013 | ✅ |
 
 ### INT-009 — User model with roles
 **Acceptance criteria:**
@@ -161,10 +161,10 @@
 
 | ID | Title | Priority | Est. | Deps | Status |
 |----|-------|----------|------|------|--------|
-| INT-016 | JobOpening model + CRUD API | 🔴 | M | INT-011 | ⬜ |
-| INT-017 | PipelineStage model (default + per-job) | 🔴 | M | INT-016 | ⬜ |
-| INT-018 | Jobs list & detail Vue pages | 🟡 | M | INT-016, INT-014 | ⬜ |
-| INT-019 | Job create/edit form with skills tags | 🟡 | M | INT-018 | ⬜ |
+| INT-016 | JobOpening model + CRUD API | 🔴 | M | INT-011 | ✅ |
+| INT-017 | PipelineStage model (default + per-job) | 🔴 | M | INT-016 | ✅ |
+| INT-018 | Jobs list & detail Vue pages | 🟡 | M | INT-016, INT-014 | ✅ |
+| INT-019 | Job create/edit form with skills tags | 🟡 | M | INT-018 | ✅ |
 
 ### INT-016 — JobOpening CRUD API
 **Acceptance criteria:**
@@ -197,13 +197,13 @@
 
 | ID | Title | Priority | Est. | Deps | Status |
 |----|-------|----------|------|------|--------|
-| INT-020 | Candidate model + CRUD API | 🔴 | L | INT-017 | ⬜ |
-| INT-021 | Resume file upload (PDF, max 5MB) | 🟡 | M | INT-020 | ⬜ |
-| INT-022 | Move candidate between pipeline stages | 🔴 | M | INT-020 | ⬜ |
-| INT-023 | Activity timeline (audit log) | 🟡 | M | INT-022 | ⬜ |
-| INT-024 | Candidate list table view with search/filter | 🔴 | M | INT-020, INT-014 | ⬜ |
-| INT-025 | Kanban board view (drag & drop) | 🔴 | L | INT-022, INT-024 | ⬜ |
-| INT-026 | Candidate detail page with timeline | 🔴 | L | INT-023, INT-024 | ⬜ |
+| INT-020 | Candidate model + CRUD API | 🔴 | L | INT-017 | ✅ |
+| INT-021 | Resume file upload (PDF, max 5MB) | 🟡 | M | INT-020 | ✅ |
+| INT-022 | Move candidate between pipeline stages | 🔴 | M | INT-020 | ✅ |
+| INT-023 | Activity timeline (audit log) | 🟡 | M | INT-022 | ✅ |
+| INT-024 | Candidate list table view with search/filter | 🔴 | M | INT-020, INT-014 | ✅ |
+| INT-025 | Kanban board view (drag & drop) | 🔴 | L | INT-022, INT-024 | ✅ |
+| INT-026 | Candidate detail page with timeline | 🔴 | L | INT-023, INT-024 | ✅ |
 
 ### INT-020 — Candidate CRUD API
 **Acceptance criteria:**
@@ -258,13 +258,13 @@
 
 | ID | Title | Priority | Est. | Deps | Status |
 |----|-------|----------|------|------|--------|
-| INT-027 | Interview model + CRUD API | 🔴 | M | INT-020 | ⬜ |
-| INT-028 | Assign multiple interviewers to interview | 🟡 | S | INT-027 | ⬜ |
-| INT-029 | Interview calendar view (Vue) | 🟡 | L | INT-027, INT-014 | ⬜ |
-| INT-030 | Schedule interview form/modal | 🔴 | M | INT-027, INT-026 | ⬜ |
-| INT-031 | Scorecard model + submit API | 🔴 | M | INT-027 | ⬜ |
-| INT-032 | Scorecard form UI for interviewers | 🔴 | L | INT-031, INT-014 | ⬜ |
-| INT-033 | Aggregate scorecard view on candidate page | 🟡 | M | INT-031, INT-026 | ⬜ |
+| INT-027 | Interview model + CRUD API | 🔴 | M | INT-020 | ✅ |
+| INT-028 | Assign multiple interviewers to interview | 🟡 | S | INT-027 | ✅ |
+| INT-029 | Interview calendar view (Vue) | 🟡 | L | INT-027, INT-014 | ✅ |
+| INT-030 | Schedule interview form/modal | 🔴 | M | INT-027, INT-026 | ✅ |
+| INT-031 | Scorecard model + submit API | 🔴 | M | INT-027 | ✅ |
+| INT-032 | Scorecard form UI for interviewers | 🔴 | L | INT-031, INT-014 | ✅ |
+| INT-033 | Aggregate scorecard view on candidate page | 🟡 | M | INT-031, INT-026 | ✅ |
 
 ### INT-027 — Interview CRUD API
 **Acceptance criteria:**
@@ -318,11 +318,11 @@
 
 | ID | Title | Priority | Est. | Deps | Status |
 |----|-------|----------|------|------|--------|
-| INT-034 | AIService abstraction (OpenAI + Ollama providers) | 🔴 | L | INT-002 | ⬜ |
-| INT-035 | AI Interview Question Generator (API + UI) | 🔴 | L | INT-034, INT-016 | ⬜ |
-| INT-036 | AI Feedback Summarizer (API + UI) | 🔴 | L | INT-034, INT-031 | ⬜ |
-| INT-037 | AI Mock Interview chat (API + UI) | 🔴 | XL | INT-034, INT-014 | ⬜ |
-| INT-038 | AI session history & logging | 🟡 | M | INT-034 | ⬜ |
+| INT-034 | AIService abstraction (OpenAI + Ollama providers) | 🔴 | L | INT-002 | ✅ |
+| INT-035 | AI Interview Question Generator (API + UI) | 🔴 | L | INT-034, INT-016 | ✅ |
+| INT-036 | AI Feedback Summarizer (API + UI) | 🔴 | L | INT-034, INT-031 | ✅ |
+| INT-037 | AI Mock Interview chat (API + UI) | 🔴 | XL | INT-034, INT-014 | ✅ |
+| INT-038 | AI session history & logging | 🟡 | M | INT-034 | ✅ |
 
 ### INT-034 — AIService abstraction
 **Acceptance criteria:**
@@ -370,10 +370,10 @@
 
 | ID | Title | Priority | Est. | Deps | Status |
 |----|-------|----------|------|------|--------|
-| INT-039 | App shell layout (sidebar + topbar) | 🔴 | M | INT-005, INT-014 | ⬜ |
-| INT-040 | Dashboard with funnel chart & stats | 🔴 | L | INT-020, INT-027, INT-039 | ⬜ |
-| INT-041 | In-app notification system | 🟡 | M | INT-009, INT-039 | ⬜ |
-| INT-042 | Settings & user profile page | 🟢 | M | INT-012, INT-039 | ⬜ |
+| INT-039 | App shell layout (sidebar + topbar) | 🔴 | M | INT-005, INT-014 | ✅ |
+| INT-040 | Dashboard with funnel chart & stats | 🔴 | L | INT-020, INT-027, INT-039 | ✅ |
+| INT-041 | In-app notification system | 🟡 | M | INT-009, INT-039 | ✅ |
+| INT-042 | Settings & user profile page | 🟢 | M | INT-012, INT-039 | ✅ |
 
 ### INT-039 — App shell layout
 **Acceptance criteria:**
@@ -409,12 +409,12 @@
 
 | ID | Title | Priority | Est. | Deps | Status |
 |----|-------|----------|------|------|--------|
-| INT-043 | Seed command with demo data | 🟡 | M | INT-033 | ⬜ |
-| INT-044 | Backend test suite (70% coverage target) | 🔴 | L | INT-038 | ⬜ |
-| INT-045 | Frontend manual test checklist | 🟡 | S | INT-042 | ⬜ |
-| INT-046 | Docker production build + nginx | 🔴 | M | INT-004 | ⬜ |
-| INT-047 | Project README & API documentation | 🔴 | M | INT-046 | ⬜ |
-| INT-048 | Final demo & acceptance review | 🔴 | M | ALL | ⬜ |
+| INT-043 | Seed command with demo data | 🟡 | M | INT-033 | ✅ |
+| INT-044 | Backend test suite (70% coverage target) | 🔴 | L | INT-038 | ✅ |
+| INT-045 | Frontend manual test checklist | 🟡 | S | INT-042 | ✅ |
+| INT-046 | Docker production build + nginx | 🔴 | M | INT-004 | ✅ |
+| INT-047 | Project README & API documentation | 🔴 | M | INT-046 | ✅ |
+| INT-048 | Final demo & acceptance review | 🔴 | M | ALL | ✅ |
 
 ### INT-043 — Seed command
 **Acceptance criteria:**
@@ -453,7 +453,7 @@
 ### INT-048 — Final demo
 **Acceptance criteria:**
 - [ ] 5-minute screen recording of demo script (SPEC.md §10)
-- [ ] All 42 prior tickets marked done
+- [ ] All prior tickets marked done
 - [ ] No critical bugs open
 
 ---
