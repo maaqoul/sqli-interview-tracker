@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.scorecards",
     "apps.notifications",
     "apps.ai_assistant",
+    "apps.dashboard",
 ]
 
 MIDDLEWARE = [

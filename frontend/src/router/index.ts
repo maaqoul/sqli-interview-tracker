@@ -12,6 +12,7 @@ import InterviewsCalendarView from '@/views/interviews/InterviewsCalendarView.vu
 import MyInterviewsView from '@/views/interviews/MyInterviewsView.vue'
 import ScorecardFormView from '@/views/interviews/ScorecardFormView.vue'
 import AIToolsView from '@/views/ai/AIToolsView.vue'
+import SettingsView from '@/views/SettingsView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -64,6 +65,7 @@ const router = createRouter({
       component: ScorecardFormView,
     },
     { path: '/ai', name: 'ai-tools', component: AIToolsView },
+    { path: '/settings', name: 'settings', component: SettingsView },
   ],
 })
 
