@@ -56,3 +56,22 @@ export interface MockInterviewResponse {
   history: ChatMessage[]
   session_id: number
 }
+
+export type AISessionType = 'questions' | 'summary' | 'mock'
+
+export interface AISession {
+  id: number
+  type: AISessionType
+  user: number
+  candidate: number | null
+  candidate_name: string | null
+  input_data: Record<string, unknown>
+  output_data: Record<string, unknown>
+  preview: string
+  created_at: string
+}
+
+export interface PaginatedAISessions {
+  count: number
+  results: AISession[]
+}

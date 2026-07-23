@@ -255,3 +255,94 @@ class SummarizeAndMockAPITests(TestCase):
         self.assertTrue(
             AISession.objects.filter(id=session_id, type=AISessionType.MOCK).exists()
         )
+
+
+@override_settings(AI_PROVIDER="mock")
+class AISessionHistoryAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email="history@sqli.com",
+            password="testpass123",
+            first_name="Hist",
+            last_name="Ory",
+            role=Role.RECRUITER,
+        )
+        self.other = User.objects.create_user(
+            email="other@sqli.com",
+            password="testpass123",
+            first_name="O",
+            last_name="Ther",
+            role=Role.INTERVIEWER,
+        )
+        AISession.objects.create(
+            type=AISessionType.QUESTIONS,
+            user=self.user,
+            input_data={"job_title": "Dev"},
+            output_data={"questions": [{"question": "Q1"}] * 8},
+        )
+        self.mock_session = AISession.objects.create(
+            type=AISessionType.MOCK,
+            user=self.user,
+            input_data={"role": "Python Dev", "level": "mid"},
+            output_data={
+                "history": [
+                    {"role": "assistant", "content": "Q1?"},
+                    {"role": "user", "content": "A1"},
+                ],
+                "done": True,
+                "summary": "Good practice.",
+            },
+        )
+        AISession.objects.create(
+            type=AISessionType.SUMMARY,
+            user=self.other,
+            input_data={},
+            output_data={"recommendation": "yes"},
+        )
+        reset_ai_rate_limit(self.user)
+
+    def _login(self, user=None):
+        user = user or self.user
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": user.email, "password": "testpass123"},
+            format="json",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.json()['access']}")
+
+    def test_list_sessions(self):
+        self._login()
+        response = self.client.get("/api/ai/sessions/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        # Recruiter sees all (including other user's summary)
+        self.assertGreaterEqual(data["count"], 3)
+
+    def test_filter_by_type(self):
+        self._login()
+        response = self.client.get("/api/ai/sessions/?type=mock")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.json()["results"]
+        self.assertTrue(all(r["type"] == "mock" for r in results))
+        self.assertGreaterEqual(len(results), 1)
+
+    def test_invalid_type(self):
+        self._login()
+        response = self.client.get("/api/ai/sessions/?type=nope")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_retrieve_mock_transcript(self):
+        self._login()
+        response = self.client.get(f"/api/ai/sessions/{self.mock_session.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(data["type"], "mock")
+        self.assertEqual(len(data["output_data"]["history"]), 2)
+        self.assertIn("preview", data)
+
+    def test_interviewer_only_sees_own(self):
+        self._login(self.other)
+        response = self.client.get("/api/ai/sessions/")
+        results = response.json()["results"]
+        self.assertTrue(all(r["user"] == self.other.id for r in results))
