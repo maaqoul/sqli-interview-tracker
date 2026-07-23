@@ -108,3 +108,150 @@ class GenerateQuestionsAPITests(TestCase):
 
         blocked = self.client.post("/api/ai/generate-questions/", payload, format="json")
         self.assertEqual(blocked.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+@override_settings(AI_PROVIDER="mock")
+class SummarizeAndMockAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.recruiter = User.objects.create_user(
+            email="recruiter2@sqli.com",
+            password="testpass123",
+            first_name="Jean",
+            last_name="Dupont",
+            role=Role.RECRUITER,
+        )
+        self.interviewer = User.objects.create_user(
+            email="interviewer@sqli.com",
+            password="testpass123",
+            first_name="Sara",
+            last_name="Lee",
+            role=Role.INTERVIEWER,
+        )
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.candidates.models import Candidate, CandidateStatus
+        from apps.interviews.models import Interview, InterviewType
+        from apps.jobs.models import JobOpening, JobStatus
+        from apps.scorecards.models import Scorecard
+
+        self.job = JobOpening.objects.create(
+            title="Senior Python Developer",
+            department="Engineering",
+            location="Paris",
+            level="senior",
+            description="Build APIs.",
+            status=JobStatus.OPEN,
+            created_by=self.recruiter,
+        )
+        self.candidate = Candidate.objects.create(
+            first_name="Marie",
+            last_name="Martin",
+            email="marie@example.com",
+            job=self.job,
+            current_stage=self.job.pipeline_stages.get(order=1),
+            status=CandidateStatus.ACTIVE,
+        )
+        interview = Interview.objects.create(
+            candidate=self.candidate,
+            job=self.job,
+            type=InterviewType.VIDEO,
+            scheduled_at=timezone.now() + timedelta(days=1),
+            created_by=self.recruiter,
+        )
+        interview.interviewers.add(self.interviewer)
+        Scorecard.objects.create(
+            interview=interview,
+            interviewer=self.interviewer,
+            overall_rating=4,
+            skill_ratings={
+                "technical": 4,
+                "communication": 3,
+                "problem_solving": 4,
+                "culture_fit": 3,
+                "leadership": 2,
+            },
+            strengths="Strong Django skills",
+            weaknesses="Limited Vue experience",
+            recommendation="yes",
+        )
+        reset_ai_rate_limit(self.recruiter)
+
+    def _login(self):
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": self.recruiter.email, "password": "testpass123"},
+            format="json",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.json()['access']}")
+
+    def test_summarize_feedback(self):
+        self._login()
+        response = self.client.post(
+            "/api/ai/summarize-feedback/",
+            {"candidate_id": self.candidate.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertIn("strengths", data)
+        self.assertIn("concerns", data)
+        self.assertIn("recommendation", data)
+        self.assertIn("suggested_next_step", data)
+        self.assertEqual(data["scorecard_count"], 1)
+        self.assertIn("human decision", data["disclaimer"].lower())
+        self.assertTrue(
+            AISession.objects.filter(
+                user=self.recruiter,
+                type=AISessionType.SUMMARY,
+                candidate=self.candidate,
+            ).exists()
+        )
+
+    def test_summarize_missing_candidate(self):
+        self._login()
+        response = self.client.post(
+            "/api/ai/summarize-feedback/",
+            {"candidate_id": 99999},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_mock_interview_flow(self):
+        self._login()
+        start = self.client.post(
+            "/api/ai/mock-interview/",
+            {
+                "role": "Python Developer",
+                "level": "senior",
+                "history": [],
+                "user_answer": "",
+            },
+            format="json",
+        )
+        self.assertEqual(start.status_code, status.HTTP_200_OK)
+        start_data = start.json()
+        self.assertTrue(start_data["next_question"])
+        self.assertFalse(start_data["done"])
+        session_id = start_data["session_id"]
+
+        turn = self.client.post(
+            "/api/ai/mock-interview/",
+            {
+                "role": "Python Developer",
+                "level": "senior",
+                "history": start_data["history"],
+                "user_answer": "I enjoy building APIs and mentoring juniors.",
+                "session_id": session_id,
+            },
+            format="json",
+        )
+        self.assertEqual(turn.status_code, status.HTTP_200_OK)
+        turn_data = turn.json()
+        self.assertTrue(turn_data["feedback"] or turn_data["next_question"])
+        self.assertEqual(turn_data["session_id"], session_id)
+        self.assertTrue(
+            AISession.objects.filter(id=session_id, type=AISessionType.MOCK).exists()
+        )

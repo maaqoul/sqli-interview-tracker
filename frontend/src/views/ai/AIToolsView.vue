@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { computed, onMounted, ref, watch } from 'vue'
-import { generateQuestions } from '@/api/ai'
+import { generateQuestions, mockInterviewTurn } from '@/api/ai'
 import { fetchJobs } from '@/api/jobs'
 import AppLayout from '@/components/AppLayout.vue'
 import AppToast from '@/components/AppToast.vue'
-import type { InterviewQuestion } from '@/types/ai'
+import type { ChatMessage, InterviewQuestion } from '@/types/ai'
 import type { Job } from '@/types/jobs'
 
 type TabId = 'questions' | 'mock' | 'history'
@@ -20,6 +20,18 @@ const loading = ref(false)
 const error = ref('')
 const toast = ref('')
 const pageLoading = ref(true)
+
+// Mock interview state
+const mockRole = ref('')
+const mockLevel = ref('mid')
+const mockHistory = ref<ChatMessage[]>([])
+const mockSessionId = ref<number | null>(null)
+const mockAnswer = ref('')
+const mockLoading = ref(false)
+const mockError = ref('')
+const mockDone = ref(false)
+const mockSummary = ref('')
+const mockStarted = ref(false)
 
 const selectedJob = computed(() =>
   jobs.value.find((j) => j.id === selectedJobId.value) ?? null,
@@ -58,7 +70,11 @@ function showToast(msg: string) {
 }
 
 watch(selectedJob, (job) => {
-  if (job) level.value = job.level
+  if (job) {
+    level.value = job.level
+    if (!mockRole.value) mockRole.value = job.title
+    mockLevel.value = job.level
+  }
 })
 
 async function loadJobs() {
@@ -68,6 +84,8 @@ async function loadJobs() {
     jobs.value = data.results
     if (jobs.value.length && selectedJobId.value === '') {
       selectedJobId.value = jobs.value[0].id
+      mockRole.value = jobs.value[0].title
+      mockLevel.value = jobs.value[0].level
     }
   } catch {
     error.value = 'Could not load jobs.'
@@ -129,6 +147,98 @@ async function copyAll() {
   } catch {
     showToast('Could not copy.')
   }
+}
+
+async function startMock() {
+  mockError.value = ''
+  if (!mockRole.value.trim()) {
+    mockError.value = 'Enter a role first.'
+    return
+  }
+  mockLoading.value = true
+  mockDone.value = false
+  mockSummary.value = ''
+  mockHistory.value = []
+  mockSessionId.value = null
+  try {
+    const data = await mockInterviewTurn({
+      role: mockRole.value.trim(),
+      level: mockLevel.value,
+      history: [],
+      user_answer: '',
+    })
+    mockHistory.value = data.history
+    mockSessionId.value = data.session_id
+    mockStarted.value = true
+    mockDone.value = data.done
+  } catch (err) {
+    mockError.value = axios.isAxiosError(err)
+      ? String(err.response?.data?.detail || 'Could not start mock interview.')
+      : 'Could not start mock interview.'
+  } finally {
+    mockLoading.value = false
+  }
+}
+
+async function sendMockAnswer() {
+  if (!mockAnswer.value.trim() || mockDone.value) return
+  mockLoading.value = true
+  mockError.value = ''
+  const answer = mockAnswer.value.trim()
+  mockAnswer.value = ''
+  try {
+    const data = await mockInterviewTurn({
+      role: mockRole.value.trim(),
+      level: mockLevel.value,
+      history: mockHistory.value,
+      user_answer: answer,
+      session_id: mockSessionId.value,
+    })
+    mockHistory.value = data.history
+    mockSessionId.value = data.session_id
+    mockDone.value = data.done
+    if (data.done) mockSummary.value = data.summary
+  } catch (err) {
+    mockError.value = axios.isAxiosError(err)
+      ? String(err.response?.data?.detail || 'Could not send answer.')
+      : 'Could not send answer.'
+  } finally {
+    mockLoading.value = false
+  }
+}
+
+async function endMock() {
+  mockLoading.value = true
+  mockError.value = ''
+  try {
+    const data = await mockInterviewTurn({
+      role: mockRole.value.trim(),
+      level: mockLevel.value,
+      history: mockHistory.value,
+      user_answer: '',
+      session_id: mockSessionId.value,
+      end: true,
+    })
+    mockHistory.value = data.history
+    mockDone.value = true
+    mockSummary.value = data.summary
+  } catch (err) {
+    mockError.value = axios.isAxiosError(err)
+      ? String(err.response?.data?.detail || 'Could not end session.')
+      : 'Could not end session.'
+  } finally {
+    mockLoading.value = false
+  }
+}
+
+function resetMock() {
+  mockStarted.value = false
+  mockHistory.value = []
+  mockSessionId.value = null
+  mockAnswer.value = ''
+  mockDone.value = false
+  mockSummary.value = ''
+  mockError.value = ''
 }
 
 onMounted(loadJobs)
@@ -281,13 +391,123 @@ onMounted(loadJobs)
       </div>
     </div>
 
-    <!-- Placeholders for later tickets -->
-    <div
-      v-else-if="activeTab === 'mock'"
-      class="bg-white rounded-xl border border-sqli-gray-100 p-8 text-center max-w-3xl"
-    >
-      <p class="text-sqli-midnight font-medium">Mock Interview</p>
-      <p class="text-sm text-gray-500 mt-1">Coming in INT-037.</p>
+    <!-- Mock Interview -->
+    <div v-else-if="activeTab === 'mock'" class="space-y-4 max-w-3xl">
+      <div class="bg-white rounded-xl border border-sqli-gray-100 p-6 space-y-4">
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-medium text-sqli-midnight" for="mock-role">Role</label>
+            <input
+              id="mock-role"
+              v-model="mockRole"
+              type="text"
+              class="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              :disabled="mockStarted"
+              placeholder="e.g. Senior Python Developer"
+            />
+          </div>
+          <div>
+            <label class="text-sm font-medium text-sqli-midnight" for="mock-level">Level</label>
+            <select
+              id="mock-level"
+              v-model="mockLevel"
+              class="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+              :disabled="mockStarted"
+            >
+              <option v-for="opt in levels" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-if="!mockStarted"
+            type="button"
+            class="bg-sqli-cobalt hover:bg-[#003399] text-white font-medium px-4 py-2 rounded-lg disabled:opacity-50"
+            :disabled="mockLoading"
+            @click="startMock"
+          >
+            {{ mockLoading ? 'Starting…' : 'Start Session' }}
+          </button>
+          <template v-else>
+            <button
+              v-if="!mockDone"
+              type="button"
+              class="px-4 py-2 rounded-lg border border-gray-200 text-sm"
+              :disabled="mockLoading"
+              @click="endMock"
+            >
+              End session
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 rounded-lg border border-gray-200 text-sm"
+              @click="resetMock"
+            >
+              New session
+            </button>
+          </template>
+        </div>
+        <p v-if="mockError" class="text-sm text-red-600">{{ mockError }}</p>
+      </div>
+
+      <div
+        v-if="mockStarted"
+        class="bg-white rounded-xl border border-sqli-gray-100 p-4 min-h-[280px] flex flex-col"
+      >
+        <div class="flex-1 space-y-3 overflow-y-auto max-h-[420px] mb-4">
+          <div
+            v-for="(msg, i) in mockHistory"
+            :key="i"
+            class="flex"
+            :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
+          >
+            <div
+              class="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap"
+              :class="
+                msg.role === 'user'
+                  ? 'bg-sqli-cobalt text-white rounded-br-md'
+                  : 'bg-sqli-cream text-sqli-midnight rounded-bl-md'
+              "
+            >
+              <span v-if="msg.role === 'assistant'" class="text-xs text-sqli-cobalt block mb-1">
+                SQLI Interviewer
+              </span>
+              {{ msg.content }}
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="mockDone && mockSummary"
+          class="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          <p class="font-medium mb-1">Session summary</p>
+          <p>{{ mockSummary }}</p>
+        </div>
+
+        <form
+          v-if="!mockDone"
+          class="flex gap-2"
+          @submit.prevent="sendMockAnswer"
+        >
+          <input
+            v-model="mockAnswer"
+            type="text"
+            class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+            placeholder="Type your answer…"
+            :disabled="mockLoading"
+          />
+          <button
+            type="submit"
+            class="bg-sqli-cobalt text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50"
+            :disabled="mockLoading || !mockAnswer.trim()"
+          >
+            Send
+          </button>
+        </form>
+      </div>
     </div>
 
     <div
