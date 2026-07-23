@@ -1,10 +1,13 @@
 import api from '@/api/client'
 import type {
+  AISession,
+  AISessionType,
   GenerateQuestionsPayload,
   GenerateQuestionsResponse,
   HiringBrief,
   MockInterviewPayload,
   MockInterviewResponse,
+  PaginatedAISessions,
 } from '@/types/ai'
 
 export async function generateQuestions(payload: GenerateQuestionsPayload) {
@@ -27,5 +30,17 @@ export async function mockInterviewTurn(payload: MockInterviewPayload) {
     '/api/ai/mock-interview/',
     payload,
   )
+  return data
+}
+
+export async function fetchAISessions(type?: AISessionType | '') {
+  const { data } = await api.get<PaginatedAISessions>('/api/ai/sessions/', {
+    params: type ? { type } : undefined,
+  })
+  return data
+}
+
+export async function fetchAISession(id: number) {
+  const { data } = await api.get<AISession>(`/api/ai/sessions/${id}/`)
   return data
 }

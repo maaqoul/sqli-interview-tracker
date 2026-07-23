@@ -3,9 +3,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.models import Role
 from apps.ai_assistant.models import AISession, AISessionType
 from apps.ai_assistant.rate_limit import check_ai_rate_limit
 from apps.ai_assistant.serializers import (
+    AISessionSerializer,
     GenerateQuestionsSerializer,
     MockInterviewSerializer,
     SummarizeFeedbackSerializer,
@@ -230,3 +232,56 @@ class MockInterviewView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class AISessionListView(APIView):
+    """GET /api/ai/sessions/?type=questions|summary|mock — INT-038."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        queryset = AISession.objects.select_related("candidate", "user").order_by(
+            "-created_at"
+        )
+
+        # Users see their own sessions; recruiters/admins see all
+        if request.user.role not in (Role.ADMIN, Role.RECRUITER):
+            queryset = queryset.filter(user=request.user)
+
+        session_type = request.query_params.get("type")
+        if session_type:
+            if session_type not in AISessionType.values:
+                return Response(
+                    {"detail": "Invalid type. Use questions, summary, or mock."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            queryset = queryset.filter(type=session_type)
+
+        serializer = AISessionSerializer(queryset[:100], many=True)
+        return Response({"count": len(serializer.data), "results": serializer.data})
+
+
+class AISessionDetailView(APIView):
+    """GET /api/ai/sessions/<id>/ — full session including mock transcript."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            session = AISession.objects.select_related("candidate", "user").get(pk=pk)
+        except AISession.DoesNotExist:
+            return Response(
+                {"detail": "Session not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if (
+            request.user.role not in (Role.ADMIN, Role.RECRUITER)
+            and session.user_id != request.user.id
+        ):
+            return Response(
+                {"detail": "Session not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(AISessionSerializer(session).data)

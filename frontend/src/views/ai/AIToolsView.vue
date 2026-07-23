@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { computed, onMounted, ref, watch } from 'vue'
-import { generateQuestions, mockInterviewTurn } from '@/api/ai'
+import { fetchAISession, fetchAISessions, generateQuestions, mockInterviewTurn } from '@/api/ai'
 import { fetchJobs } from '@/api/jobs'
 import AppLayout from '@/components/AppLayout.vue'
 import AppToast from '@/components/AppToast.vue'
-import type { ChatMessage, InterviewQuestion } from '@/types/ai'
+import type { AISession, AISessionType, ChatMessage, InterviewQuestion } from '@/types/ai'
 import type { Job } from '@/types/jobs'
 
 type TabId = 'questions' | 'mock' | 'history'
@@ -33,8 +33,33 @@ const mockDone = ref(false)
 const mockSummary = ref('')
 const mockStarted = ref(false)
 
+// History state
+const historyFilter = ref<AISessionType | ''>('')
+const sessions = ref<AISession[]>([])
+const historyLoading = ref(false)
+const historyError = ref('')
+const selectedSession = ref<AISession | null>(null)
+const detailLoading = ref(false)
+
 const selectedJob = computed(() =>
   jobs.value.find((j) => j.id === selectedJobId.value) ?? null,
+)
+
+const selectedTranscript = computed(() => {
+  const out = selectedSession.value?.output_data as
+    | {
+        history?: ChatMessage[]
+        questions?: InterviewQuestion[]
+        summary?: string
+        recommendation?: string
+        suggested_next_step?: string
+      }
+    | undefined
+  return out
+})
+
+const selectedQuestions = computed(
+  () => selectedTranscript.value?.questions ?? [],
 )
 
 const tabs: { id: TabId; label: string }[] = [
@@ -240,6 +265,65 @@ function resetMock() {
   mockSummary.value = ''
   mockError.value = ''
 }
+
+async function loadSessions() {
+  historyLoading.value = true
+  historyError.value = ''
+  try {
+    const data = await fetchAISessions(historyFilter.value)
+    sessions.value = data.results
+  } catch {
+    historyError.value = 'Could not load sessions.'
+    sessions.value = []
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+async function openSession(id: number) {
+  detailLoading.value = true
+  try {
+    selectedSession.value = await fetchAISession(id)
+  } catch {
+    historyError.value = 'Could not load session detail.'
+    selectedSession.value = null
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+function closeSessionDetail() {
+  selectedSession.value = null
+}
+
+function formatSessionWhen(iso: string) {
+  return new Date(iso).toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const typeLabel: Record<AISessionType, string> = {
+  questions: 'Questions',
+  summary: 'Summary',
+  mock: 'Mock',
+}
+
+watch(activeTab, (tab) => {
+  if (tab === 'history') {
+    selectedSession.value = null
+    loadSessions()
+  }
+})
+
+watch(historyFilter, () => {
+  if (activeTab.value === 'history') {
+    selectedSession.value = null
+    loadSessions()
+  }
+})
 
 onMounted(loadJobs)
 </script>
@@ -510,12 +594,153 @@ onMounted(loadJobs)
       </div>
     </div>
 
-    <div
-      v-else
-      class="bg-white rounded-xl border border-sqli-gray-100 p-8 text-center max-w-3xl"
-    >
-      <p class="text-sqli-midnight font-medium">AI session history</p>
-      <p class="text-sm text-gray-500 mt-1">Coming in INT-038.</p>
+    <!-- History -->
+    <div v-else class="space-y-4 max-w-3xl">
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="opt in [
+            { value: '', label: 'All' },
+            { value: 'questions', label: 'Questions' },
+            { value: 'summary', label: 'Summary' },
+            { value: 'mock', label: 'Mock' },
+          ]"
+          :key="opt.value || 'all'"
+          type="button"
+          class="px-3 py-1.5 rounded-lg border text-sm transition-colors"
+          :class="
+            historyFilter === opt.value
+              ? 'border-sqli-cobalt bg-sqli-cobalt text-white'
+              : 'border-gray-200 text-gray-600 hover:border-sqli-sky'
+          "
+          @click="historyFilter = opt.value as typeof historyFilter"
+        >
+          {{ opt.label }}
+        </button>
+      </div>
+
+      <div v-if="historyLoading" class="text-sm text-gray-500">Loading sessions…</div>
+      <p v-else-if="historyError" class="text-sm text-red-600">{{ historyError }}</p>
+
+      <div
+        v-else-if="!sessions.length"
+        class="bg-white rounded-xl border border-sqli-gray-100 p-8 text-center"
+      >
+        <p class="text-sqli-midnight font-medium">No sessions yet</p>
+        <p class="text-sm text-gray-500 mt-1">
+          Generate questions, create a hiring brief, or run a mock interview.
+        </p>
+      </div>
+
+      <div v-else class="space-y-2">
+        <button
+          v-for="s in sessions"
+          :key="s.id"
+          type="button"
+          class="w-full text-left bg-white rounded-xl border border-sqli-gray-100 p-4 hover:border-sqli-sky transition-colors"
+          @click="openSession(s.id)"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span
+              class="text-xs px-2 py-0.5 rounded-md bg-sqli-cream text-sqli-midnight capitalize"
+            >
+              {{ typeLabel[s.type] }}
+            </span>
+            <span class="text-xs text-gray-400">{{ formatSessionWhen(s.created_at) }}</span>
+          </div>
+          <p class="text-sm text-sqli-midnight mt-1.5">{{ s.preview }}</p>
+        </button>
+      </div>
+
+      <!-- Detail panel -->
+      <div
+        v-if="selectedSession || detailLoading"
+        class="bg-white rounded-xl border border-sqli-gray-100 p-5"
+      >
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-medium text-sqli-midnight">Session detail</h3>
+          <button
+            type="button"
+            class="text-sm text-gray-500 hover:text-sqli-midnight"
+            @click="closeSessionDetail"
+          >
+            Close
+          </button>
+        </div>
+        <div v-if="detailLoading" class="text-sm text-gray-500">Loading…</div>
+        <template v-else-if="selectedSession">
+          <p class="text-xs text-gray-400 mb-3">
+            {{ typeLabel[selectedSession.type] }} ·
+            {{ formatSessionWhen(selectedSession.created_at) }}
+          </p>
+
+          <!-- Mock transcript -->
+          <div v-if="selectedSession.type === 'mock'" class="space-y-3">
+            <div
+              v-for="(msg, i) in selectedTranscript?.history || []"
+              :key="i"
+              class="flex"
+              :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
+            >
+              <div
+                class="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap"
+                :class="
+                  msg.role === 'user'
+                    ? 'bg-sqli-cobalt text-white rounded-br-md'
+                    : 'bg-sqli-cream text-sqli-midnight rounded-bl-md'
+                "
+              >
+                {{ msg.content }}
+              </div>
+            </div>
+            <p
+              v-if="selectedTranscript?.summary"
+              class="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-3"
+            >
+              {{ selectedTranscript.summary }}
+            </p>
+            <p
+              v-if="!(selectedTranscript?.history || []).length"
+              class="text-sm text-gray-500"
+            >
+              No transcript messages saved.
+            </p>
+          </div>
+
+          <!-- Questions list -->
+          <ol
+            v-else-if="selectedSession.type === 'questions'"
+            class="space-y-2 text-sm"
+          >
+            <li
+              v-for="(q, i) in selectedQuestions"
+              :key="i"
+              class="border border-sqli-gray-100 rounded-lg p-3"
+            >
+              <span class="text-gray-400 mr-1">{{ i + 1 }}.</span>
+              {{ q.question }}
+              <span class="text-xs text-gray-400 ml-1 capitalize">
+                ({{ q.type }} · {{ q.difficulty }})
+              </span>
+            </li>
+          </ol>
+
+          <!-- Summary brief -->
+          <div v-else class="text-sm space-y-2 text-gray-700">
+            <p>
+              <span class="text-gray-400 text-xs uppercase">Recommendation</span><br />
+              {{ selectedTranscript?.recommendation || '—' }}
+            </p>
+            <p>
+              <span class="text-gray-400 text-xs uppercase">Next step</span><br />
+              {{ selectedTranscript?.suggested_next_step || '—' }}
+            </p>
+            <div v-if="selectedSession.candidate_name">
+              <span class="text-gray-400 text-xs uppercase">Candidate</span><br />
+              {{ selectedSession.candidate_name }}
+            </div>
+          </div>
+        </template>
+      </div>
     </div>
 
     <AppToast :message="toast" />
