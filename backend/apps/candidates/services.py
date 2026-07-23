@@ -61,4 +61,13 @@ def move_candidate_stage(*, candidate, stage, reason, user):
         },
     )
 
+    from apps.notifications.services import notify_stage_change
+
+    notify_stage_change(
+        candidate=candidate,
+        from_stage=from_stage,
+        to_stage=stage,
+        actor=user,
+    )
+
     return candidate
