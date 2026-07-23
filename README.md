@@ -13,6 +13,7 @@ Internal interview & candidate tracking platform for SQLI recruiters and hiring 
 | [`TICKETS.md`](./TICKETS.md) | Ticket board (INT-001 → INT-048) |
 | [`TESTING.md`](./TESTING.md) | Manual frontend test checklist |
 | [`DEMO.md`](./DEMO.md) | Final demo / recording script (SPEC §10) |
+| [`LEARNING.md`](./LEARNING.md) | **Understand the project** — big picture + every ticket |
 | [`INTERN-GUIDE.md`](./INTERN-GUIDE.md) | Extended intern setup notes |
 | [`WORKFLOW.md`](./WORKFLOW.md) | Commits, PRs, definition of done |
 
