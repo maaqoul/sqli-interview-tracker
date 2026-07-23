@@ -1,119 +1,185 @@
-# SQLI Interview Tracker — Intern Project
+# SQLI Interview Tracker
 
-> **"We Elevate. Digitally."** — Internal interview & candidate tracking platform for SQLI recruiters and hiring managers, with AI-assisted interview workflows.
+Internal interview & candidate tracking platform for SQLI recruiters and hiring managers, with AI-assisted workflows.
 
-**GitHub:** https://github.com/maaqoul/sqli-interview-tracker  
-**Intern guide (start here):** [`INTERN-GUIDE.md`](./INTERN-GUIDE.md) — setup, UI specs, API, everything  
-**Commits & PRs:** [`WORKFLOW.md`](./WORKFLOW.md) — definition of done, how to commit, open PRs  
-**2-week plan:** [`2-WEEK-PLAN.md`](./2-WEEK-PLAN.md)
+> **"We Elevate. Digitally."**
+
+**Repo:** https://github.com/maaqoul/sqli-interview-tracker
+
+| Doc | Purpose |
+|-----|---------|
+| [`SPEC.md`](./SPEC.md) | Product & technical specification |
+| [`BRAND.md`](./BRAND.md) | SQLI colors, typography, logos |
+| [`TICKETS.md`](./TICKETS.md) | Ticket board (INT-001 → INT-048) |
+| [`TESTING.md`](./TESTING.md) | Manual frontend test checklist |
+| [`DEMO.md`](./DEMO.md) | Final demo / recording script (SPEC §10) |
+| [`LEARNING.md`](./LEARNING.md) | **Understand the project** — big picture + every ticket |
+| [`INTERN-GUIDE.md`](./INTERN-GUIDE.md) | Extended intern setup notes |
+| [`WORKFLOW.md`](./WORKFLOW.md) | Commits, PRs, definition of done |
 
 ---
 
-## Quick start (scaffold is ready)
+## Architecture
+
+```mermaid
+flowchart LR
+  Browser["Browser"]
+  Nginx["Frontend nginx<br/>:80"]
+  Django["Django + DRF<br/>gunicorn :8000"]
+  DB[(PostgreSQL 16)]
+  AI["AI provider<br/>mock / OpenAI / Ollama"]
+
+  Browser -->|HTTP| Nginx
+  Nginx -->|SPA static| Nginx
+  Nginx -->|/api /media| Django
+  Django --> DB
+  Django --> AI
+```
+
+| Layer | Tech |
+|-------|------|
+| Frontend | Vue 3 + TypeScript + Vite + Pinia + Tailwind (SQLI tokens from [`BRAND.md`](./BRAND.md)) |
+| Backend | Django 5 + Django REST Framework + JWT |
+| Database | PostgreSQL 16 (SQLite for local tests) |
+| AI | `AI_PROVIDER=mock` by default; OpenAI or Ollama optional |
+| Deploy | Docker Compose — multi-stage images, nginx proxies `/api` |
+
+---
+
+## Quick start (Docker — recommended)
+
+Needs only **Docker Desktop** (and WSL2 on Windows).
 
 ```bash
 git clone https://github.com/maaqoul/sqli-interview-tracker.git
 cd sqli-interview-tracker
 cp .env.example .env
-make setup
-
-# Terminal 1
-make dev-backend    # http://localhost:8000/api/health/
-
-# Terminal 2
-make dev-frontend   # http://localhost:5173
+docker compose up --build
 ```
 
-**Your first ticket: INT-009** (User model with roles). Tickets INT-001 → INT-008 are already done.
+| URL | What |
+|-----|------|
+| http://localhost | Vue app (nginx) |
+| http://localhost/api/docs/ | Swagger UI (DRF Spectacular) |
+| http://localhost/api/schema/ | OpenAPI schema |
+| http://localhost:8000/api/docs/ | Same docs via backend port |
 
-A full-stack **Interview Tracking App** branded for [SQLI](https://www.sqli.com) — the European leader in Customer Experience & Digital Transformation (2,200+ employees, 12 countries, founded 1990, Euronext: SQI.PA).
+Demo seed runs on first start (`SEED_DEMO=1`). Password for all seed users: **`DemoPass123!`**
 
-The app lets SQLI HR teams:
-- Track candidates through a hiring pipeline
-- Schedule and score interviews
-- Use **AI** to generate questions, summarize feedback, and run mock interview sessions
-- View dashboards on hiring velocity and pipeline health
+| Role | Email |
+|------|-------|
+| Admin | `admin@sqli.com` |
+| Recruiter | `recruiter1@sqli.com` |
+| Interviewer | `interviewer1@sqli.com` |
 
-**Stack (mandatory):**
-| Layer | Tech |
-|-------|------|
-| Backend | Python 3.12 + **Django 5** + **Django REST Framework** |
-| Frontend | **Vue 3** + Vite + Pinia + Vue Router |
-| Database | PostgreSQL 16 |
-| AI | OpenAI API (or Ollama for local dev) |
-| Auth | JWT (djangorestframework-simplejwt) |
+Stop: `docker compose down`
 
 ---
 
-## Files in this folder
-
-| File | Purpose |
-|------|---------|
-| [`WORKFLOW.md`](./WORKFLOW.md) | **Definition of done, commits, PRs** — how to ship work |
-| [`INTERN-GUIDE.md`](./INTERN-GUIDE.md) | Complete intern guide — local setup, UI specs, API, troubleshooting |
-| [`SPEC.md`](./SPEC.md) | Full product & technical specification |
-| [`BRAND.md`](./BRAND.md) | SQLI brand guide — colors, typography, logo URLs |
-| [`TICKETS.md`](./TICKETS.md) | **Human-readable ticket board** — start here |
-| [`tickets.csv`](./tickets.csv) | Import into GitHub Issues / Plane / Taiga |
-| [`tickets.json`](./tickets.json) | Same tickets, JSON format |
-| [`IMPORT-GUIDE.md`](./IMPORT-GUIDE.md) | How to load tickets into free Jira-like tools |
-
----
-
-## Quick start for the intern
+## Local development (without Docker app stack)
 
 ```bash
-# 1. Read the spec
-cat SPEC.md
+cp .env.example .env
+# For local SQLite, clear DATABASE_URL in .env or leave unset for backend defaults
 
-# 2. Import tickets (pick one method from IMPORT-GUIDE.md)
-#    Recommended: GitHub Projects (free) or Plane Community (free)
-
-# 3. Work tickets in order: SETUP → AUTH → CORE → AI → UI → DEPLOY
-#    Each ticket has: ID, priority, estimate, acceptance criteria, dependencies
-
-# 4. Target: MVP operational in ~6–8 weeks (part-time intern pace)
+make setup          # venv + pip + npm (Unix Make; on Windows use manual steps below)
+make migrate
+make seed
+make dev-backend    # http://localhost:8000
+make dev-frontend   # http://localhost:5173  (Vite proxies /api → :8000)
 ```
 
----
+**Windows (PowerShell) without Make:**
 
-## Definition of Done (whole project)
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+$env:DATABASE_URL=""
+python manage.py migrate
+python manage.py seed_demo
+python manage.py runserver
+```
 
-The app is **operational** when ALL of these work end-to-end:
+```powershell
+cd frontend
+npm install
+npm run dev
+```
 
-- [ ] Recruiter logs in with SQLI-branded UI
-- [ ] Creates a job opening and adds candidates
-- [ ] Moves candidates through pipeline stages (drag or button)
-- [ ] Schedules an interview and assigns interviewers
-- [ ] Interviewer fills a scorecard after the interview
-- [ ] AI generates role-specific interview questions
-- [ ] AI summarizes interview notes into a hiring recommendation
-- [ ] AI mock interview chat works for candidate prep
-- [ ] Dashboard shows pipeline stats
-- [ ] App runs via `docker compose up` with README instructions
-- [ ] 20+ API tests pass, critical frontend flows work
-
----
-
-## SQLI context (why this project)
-
-SQLI positions itself as a **CX & digital transformation partner** with **AI embedded at every stage** — from strategy to deployment. They serve large enterprises (Puratos, Alstom, Bioderma, Aréas Assurances…) across:
-
-- Application Engineering
-- Data & AI
-- Experience Platform
-- Customer Activation
-- Digital Strategy
-
-Building an AI-powered interview tracker mirrors SQLI's real internal needs (2,200 employees, constant hiring) and demonstrates skills they'd value: Python APIs, Vue SPAs, PostgreSQL, and practical AI integration.
+Hot-reload Docker stack: `make dev-up` / `docker compose -f docker-compose.dev.yml up --build`
 
 ---
 
-## Who to ask for help
+## Make commands
 
-Bring blockers to your mentor with:
-1. Ticket ID (e.g. `INT-023`)
-2. What you tried
-3. Error message or screenshot
+| Command | Description |
+|---------|-------------|
+| `make up` | Production Compose: build + start detached |
+| `make down` | Stop Compose stack |
+| `make build` | Build images only |
+| `make dev-up` | Dev Compose (Vite + runserver) |
+| `make setup` | Copy `.env`, install Python + Node deps |
+| `make migrate` | Run Django migrations |
+| `make seed` | Load demo users/jobs/candidates |
+| `make test` | Pytest with **≥70%** coverage gate |
+| `make lint` | Ruff + frontend lint |
+| `make dev-backend` | Django runserver |
+| `make dev-frontend` | Vite dev server |
 
-Good luck — elevate digitally. 🚀
+---
+
+## Environment variables
+
+See [`.env.example`](./.env.example). Important keys:
+
+| Variable | Purpose | Typical value |
+|----------|---------|---------------|
+| `DATABASE_URL` | Postgres (Compose) or omit for SQLite | `postgres://sqli:…@db:5432/sqli_interviews` |
+| `DJANGO_SECRET_KEY` | Django secret | long random string |
+| `DJANGO_DEBUG` | Debug mode | `False` in Compose |
+| `DJANGO_ALLOWED_HOSTS` | Hosts | `localhost,127.0.0.1,backend,frontend` |
+| `CORS_ALLOWED_ORIGINS` | Browser origins | `http://localhost,…` |
+| `CSRF_TRUSTED_ORIGINS` | CSRF | `http://localhost,http://127.0.0.1` |
+| `SEED_DEMO` | Seed on container start | `1` |
+| `JWT_ACCESS_MINUTES` | Access token TTL | `15` |
+| `JWT_REFRESH_DAYS` | Refresh token TTL | `7` |
+| `AI_PROVIDER` | `mock` / `openai` / `ollama` | `mock` |
+| `OPENAI_API_KEY` | OpenAI (if used) | — |
+| `OLLAMA_BASE_URL` | Ollama (if used) | `http://localhost:11434` |
+| `VITE_API_BASE_URL` | Frontend API base | empty in prod (same-origin `/api`) |
+
+---
+
+## API documentation
+
+OpenAPI is generated by **drf-spectacular**.
+
+- **Swagger UI:** [/api/docs/](http://localhost/api/docs/) (or http://localhost:8000/api/docs/)
+- **Schema:** [/api/schema/](http://localhost/api/schema/)
+
+Authenticate in Swagger with JWT: authorize using `Bearer <access_token>` from `POST /api/auth/token/`.
+
+---
+
+## Branding
+
+UI follows [`BRAND.md`](./BRAND.md): SQLI blues + cream, midnight sidebar, logos under `frontend/public/assets/`. Login and shell are brand-first (not a generic admin theme).
+
+---
+
+## Testing
+
+```bash
+make test                 # backend, coverage ≥ 70%
+# Manual UI: follow TESTING.md (covers SPEC.md §10)
+```
+
+CI (GitHub Actions): lint + pytest with the same coverage gate.
+
+---
+
+## Project status
+
+Tickets **INT-001 → INT-048** are implemented (see [`TICKETS.md`](./TICKETS.md)). Final acceptance demo steps live in [`DEMO.md`](./DEMO.md).

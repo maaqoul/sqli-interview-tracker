@@ -133,8 +133,24 @@ SIMPLE_JWT = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "SQLI Interview Tracker API",
-    "DESCRIPTION": "Internal interview tracking platform with AI assistance.",
-    "VERSION": "0.1.0",
+    "DESCRIPTION": (
+        "Internal interview & candidate tracking API for SQLI recruiters and "
+        "hiring managers. Authenticate via JWT (`POST /api/auth/token/`), then "
+        "use `Authorization: Bearer <access>`."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "TAGS": [
+        {"name": "auth", "description": "Login, profile, users"},
+        {"name": "jobs", "description": "Job openings & pipeline stages"},
+        {"name": "candidates", "description": "Candidates, resumes, activity"},
+        {"name": "interviews", "description": "Scheduling & assignments"},
+        {"name": "scorecards", "description": "Interview feedback"},
+        {"name": "ai", "description": "Questions, hiring brief, mock interview"},
+        {"name": "dashboard", "description": "Funnel & stats"},
+        {"name": "notifications", "description": "In-app notifications"},
+    ],
 }
 
 AI_PROVIDER = env("AI_PROVIDER", default="mock")
